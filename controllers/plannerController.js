@@ -1,10 +1,11 @@
 import OpenAI from "openai";
+import 'dotenv/config';
 import Trip from '../models/Trip.js';
 
 // 1. Initialize the Groq client using the OpenAI SDK format
 const client = new OpenAI({
-    apiKey: process.env.TraveTravelplannerAIkey, // Using your exact .env variable name
-    baseURL: "[https://api.groq.com/openai/v1](https://api.groq.com/openai/v1)",
+    apiKey: process.env.OPENAI_API_KEY, // Updated to use the standard OPENAI_API_KEY format
+    baseURL: "https://api.groq.com/openai/v1",
 });
 
 export const generateTrip = async (req, res) => {
