@@ -1,21 +1,19 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from "openai";
 import Trip from '../models/Trip.js';
-// 1. Initialize the Google Gemini SDK with your hidden API key
-const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// 1. Initialize the Groq client using the OpenAI SDK format
+const client = new OpenAI({
+    apiKey: process.env.TraveTravelplannerAIkey, // Using your exact .env variable name
+    baseURL: "[https://api.groq.com/openai/v1](https://api.groq.com/openai/v1)",
+});
 
 export const generateTrip = async (req, res) => {
     try {
         const { destination, days, budget, interests } = req.body;
         
-        console.log(`[AI Sync] Generating a ${days}-day trip to ${destination} for user: ${req.user.name}`);
+        console.log(`[AI Sync] Generating a ${days}-day trip to ${destination} for user: ${req.user?.name || 'Guest'}`);
 
-        // 2. Select the model and force it to output JSON
-        const model = ai.getGenerativeModel({ 
-    model: "gemini-2.5-flash", 
-    generationConfig: { responseMimeType: "application/json" }
-});
-
-        // 3. Craft the strict prompt instructions
+        // 2. Craft the strict prompt instructions
         const prompt = `
             You are an expert travel planner. Generate a highly personalized day-by-day travel itinerary for a trip to ${destination}.
             
@@ -37,35 +35,48 @@ export const generateTrip = async (req, res) => {
             ]
         `;
 
-        // 4. Execute the request
-        const result = await model.generateContent(prompt);
+        // 3. Execute the request using Groq's chat completion endpoint
+        const response = await client.chat.completions.create({
+            model: "llama-3.3-70b-versatile", // Groq's fast Llama 3 model
+            messages: [
+                { role: "system", content: "You are a JSON-only API. You output raw valid JSON arrays and nothing else." },
+                { role: "user", content: prompt }
+            ],
+            temperature: 0.7, // Adds a bit of creativity while keeping structure
+        });
 
-        // 5. Parse the AI's string response into true JSON data
-        const rawText = result.response.text();
+        // 4. Parse the AI's string response into true JSON data
+        let rawText = response.choices[0].message.content;
+        
+        // Safety measure: Clean up any markdown formatting if the AI disobeys
+        if (rawText.includes('```')) {
+            rawText = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        }
+
         const cleanedJsonData = JSON.parse(rawText);
 
-        // 6. Return the perfectly structured itinerary back to your React View
+        // 5. Return the perfectly structured itinerary back to your React View
         res.status(200).json({
             success: true,
             itinerary: cleanedJsonData
         });
 
     } catch (error) {
-        console.error("🔴 Gemini API Error:", error);
+        console.error("🔴 Groq API Error:", error);
         res.status(500).json({ 
             success: false, 
             error: "The AI agent failed to compose your itinerary. Please verify your API configuration." 
         });
     }
 };
-// --- NEW: Save a generated trip to the database ---
+
+// --- Save a generated trip to the database ---
 export const saveTrip = async (req, res) => {
     try {
         const { destination, days, budget, interests, itineraryData } = req.body;
 
-        // Create a new trip linked to the user's ID (provided by authMiddleware)
         const newTrip = new Trip({
-            user: req.user.id, // Note: if your middleware uses req.user._id, change this to req.user._id
+            user: req.user.id, 
             destination,
             days,
             budget,
@@ -82,10 +93,9 @@ export const saveTrip = async (req, res) => {
     }
 };
 
-// --- NEW: Fetch all saved trips for the logged-in user ---
+// --- Fetch all saved trips for the logged-in user ---
 export const getSavedTrips = async (req, res) => {
     try {
-        // Find all trips matching the user's ID, sorted by newest first (-1)
         const trips = await Trip.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.status(200).json(trips);
         
