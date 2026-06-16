@@ -27,6 +27,10 @@ app.use(cors({
 // 3. Body Parsing Middleware
 app.use(express.json());
 
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // 4. Application Routes
 app.use('/api/planner', plannerRoutes);
 app.use('/api/auth', authRoutes);
