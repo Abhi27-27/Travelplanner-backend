@@ -3,14 +3,14 @@ import mongoose from 'mongoose';
 const tripSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // Links this trip securely to the logged-in user
+    ref: 'User', 
     required: true
   },
   destination: { type: String, required: true },
   days: { type: Number, required: true },
   budget: { type: String },
   interests: { type: String },
-  itineraryData: { type: Array, required: true }, // The AI JSON array
+  itineraryData: { type: Array, required: true }, 
   createdAt: { type: Date, default: Date.now }
 });
 

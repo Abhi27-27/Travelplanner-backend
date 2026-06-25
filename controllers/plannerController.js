@@ -2,9 +2,8 @@ import OpenAI from "openai";
 import 'dotenv/config';
 import Trip from '../models/Trip.js';
 
-// 1. Initialize the Groq client using the OpenAI SDK format
 const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY, // Updated to use the standard OPENAI_API_KEY format
+    apiKey: process.env.OPENAI_API_KEY, 
     baseURL: "https://api.groq.com/openai/v1",
 });
 
@@ -14,7 +13,7 @@ export const generateTrip = async (req, res) => {
         
         console.log(`[AI Sync] Generating a ${days}-day trip to ${destination} for user: ${req.user?.name || 'Guest'}`);
 
-        // 2. Craft the strict prompt instructions
+        
         const prompt = `
             You are an expert travel planner. Generate a highly personalized day-by-day travel itinerary for a trip to ${destination}.
             
@@ -36,27 +35,27 @@ export const generateTrip = async (req, res) => {
             ]
         `;
 
-        // 3. Execute the request using Groq's chat completion endpoint
+        
         const response = await client.chat.completions.create({
-            model: "llama-3.3-70b-versatile", // Groq's fast Llama 3 model
+            model: "llama-3.3-70b-versatile", 
             messages: [
                 { role: "system", content: "You are a JSON-only API. You output raw valid JSON arrays and nothing else." },
                 { role: "user", content: prompt }
             ],
-            temperature: 0.7, // Adds a bit of creativity while keeping structure
+            temperature: 0.7, 
         });
 
-        // 4. Parse the AI's string response into true JSON data
+        
         let rawText = response.choices[0].message.content;
         
-        // Safety measure: Clean up any markdown formatting if the AI disobeys
+        
         if (rawText.includes('```')) {
             rawText = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
         }
 
         const cleanedJsonData = JSON.parse(rawText);
 
-        // 5. Return the perfectly structured itinerary back to your React View
+        
         res.status(200).json({
             success: true,
             itinerary: cleanedJsonData
@@ -71,7 +70,6 @@ export const generateTrip = async (req, res) => {
     }
 };
 
-// --- Save a generated trip to the database ---
 export const saveTrip = async (req, res) => {
     try {
         const { destination, days, budget, interests, itineraryData } = req.body;
@@ -94,7 +92,6 @@ export const saveTrip = async (req, res) => {
     }
 };
 
-// --- Fetch all saved trips for the logged-in user ---
 export const getSavedTrips = async (req, res) => {
     try {
         const trips = await Trip.find({ user: req.user.id }).sort({ createdAt: -1 });

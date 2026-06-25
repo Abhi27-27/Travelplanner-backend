@@ -7,35 +7,30 @@ import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
-// 1. Establish database connection
 connectDB(); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 2. EXTRA RIGOROUS CORS SETUP (Must be placed before reading body data or routes)
 app.use(cors({
    origin: [
         'http://localhost:5173', 
-        'https://travelplanner-one-phi.vercel.app' // Add your live Vercel URL here!
+        'https://travelplanner-one-phi.vercel.app' 
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
 
-// 3. Body Parsing Middleware
 app.use(express.json());
 
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
-// 4. Application Routes
 app.use('/api/planner', plannerRoutes);
 app.use('/api/auth', authRoutes);
 
-// 5. Start Listening
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔗 MVC Architecture Initialized`);
